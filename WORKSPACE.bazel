@@ -1,0 +1,81 @@
+workspace(name = "bazel_stuff")
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+http_archive(
+    name = "rules_rust",
+    sha256 = "b4e622a36904b5dd2d2211e40008fc473421c8b51c9efca746ab2ecf11dca08e",
+    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.19.1/rules_rust-v0.19.1.tar.gz"],
+    #sha256 = "4a9cb4fda6ccd5b5ec393b2e944822a62e050c7c06f1ea41607f14c4fdec57a2",
+    #urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.25.1/rules_rust-v0.25.1.tar.gz"],
+)
+
+load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains", "rust_repository_set")
+
+# rust edition
+RUST_VERSION = "1.67.0"
+
+RUST_EDITION = "2021"
+
+rust_register_toolchains(
+    edition = RUST_EDITION,
+    versions = [RUST_VERSION],
+)
+
+# cross compile x86 mac to arm64 linux
+rust_repository_set(
+    name = "macos_x86_64",
+    edition = RUST_EDITION,
+    exec_triple = "x86_64-apple-darwin",
+    extra_target_triples = ["aarch64-unknown-linux-gnu"],
+    versions = [RUST_VERSION],
+)
+
+# cross compile x86 linux to aarch64 linux
+rust_repository_set(
+    name = "linux_x86_64",
+    edition = RUST_EDITION,
+    exec_triple = "x86_64-unknown-linux-gnu",
+    extra_target_triples = ["aarch64-unknown-linux-gnu"],
+    versions = [RUST_VERSION],
+)
+
+rust_repository_set(
+    name = "macos_aarch64",
+    edition = RUST_EDITION,
+    exec_triple = "aarch64-apple-darwin",
+    extra_target_triples = ["aarch64-unknown-linux-gnu"],
+    versions = [RUST_VERSION],
+)
+
+rust_repository_set(
+    name = "linux_aarch64",
+    edition = RUST_EDITION,
+    exec_triple = "aarch64-unknown-linux-gnu",
+    versions = [RUST_VERSION],
+)
+
+rules_rust_dependencies()
+rust_register_toolchains()
+
+# load the crate universe repo, so we can target external dependencies
+load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencies")
+
+crate_universe_dependencies()
+
+# load the crates repository rule
+load("@rules_rust//crate_universe:defs.bzl", "crates_repository")
+
+# create a crate index
+crates_repository(
+    name = "bazel_deps",
+    cargo_lockfile = "//:Cargo.lock",
+    lockfile = "//:Cargo.Bazel.lock",
+    manifests = [
+	"//:Cargo.toml",
+        "//:test_crate/Cargo.toml",
+    ],
+)
+
+load("@bazel_deps//:defs.bzl", "crate_repositories")
+
+crate_repositories()

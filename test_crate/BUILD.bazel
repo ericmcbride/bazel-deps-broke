@@ -1,0 +1,14 @@
+load("@bazel_deps//:defs.bzl", "aliases", "all_crate_deps")
+load("@rules_rust//rust:defs.bzl", "rust_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_binary(
+    name = "example",
+    srcs = [
+        "src/main.rs",
+    ],
+    aliases = aliases(),
+    proc_macro_deps = all_crate_deps(proc_macro = True, build = True),
+    deps = all_crate_deps(normal = True, build = True),
+)
